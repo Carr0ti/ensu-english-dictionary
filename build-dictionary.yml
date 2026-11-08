@@ -1,0 +1,39 @@
+name: Build Ensu English Dictionary
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 18 1 * *" # Monthly refresh; UTC
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Markdown dictionary
+        run: python scripts/build_dictionary.py --min-headwords 100000
+
+      - name: Package dictionary
+        run: |
+          cd build
+          zip -qr ../ensu-english-dictionary.zip dictionary README-IMPORT.md BUILD-INFO.txt
+          cd ..
+
+      - name: Upload dictionary ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ensu-english-dictionary
+          path: ensu-english-dictionary.zip
+          if-no-files-found: error
+          retention-days: 90
